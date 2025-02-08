@@ -1,0 +1,33 @@
+stages:
+  - build
+  - push
+
+variables:
+  IMAGE_NAME: "localhost:5000/myapp"
+  MINIO_ALIAS: "myminio"
+  MINIO_URL: "http://minio:9000"
+  MINIO_ACCESS_KEY: "minioadmin"
+  MINIO_SECRET_KEY: "minioadminpassword"
+  BUCKET_NAME: "docker-registry"
+
+before_script:
+  - apt-get update && apt-get install -y curl
+  - curl -O https://dl.min.io/client/mc/release/linux-amd64/mc
+  - chmod +x mc
+  - mv mc /usr/local/bin/
+  - mc alias set $MINIO_ALIAS $MINIO_URL $MINIO_ACCESS_KEY $MINIO_SECRET_KEY
+
+build_image:
+  stage: build
+  script:
+    - docker build -t $IMAGE_NAME .
+    - docker tag $IMAGE_NAME localhost:5000/myapp:latest
+
+push_image:
+  stage: push
+  script:
+    - docker push localhost:5000/myapp:latest
+    - docker save localhost:5000/myapp:latest -o myapp.tar
+    - mc alias set $MINIO_ALIAS $MINIO_URL $MINIO_ACCESS_KEY $MINIO_SECRET_KEY
+    - mc cp myapp.tar $MINIO_ALIAS/$BUCKET_NAME/myapp.tar
+

@@ -1,1 +1,1 @@
-# minio-server02
+# minio-server
